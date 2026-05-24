@@ -81,6 +81,21 @@ class FeatureEngineer:
         
         return df
 
+    def _calculate_momentum(self, df):
+        """Calculates 1-minute and 5-minute rolling returns for options and spot."""
+        # Ensure sorted by time for accurate pct_change
+        df = df.sort_values(by=['symbol', 'datetime'])
+        
+        # Option returns (multiplied by 100 for percentage scale)
+        df['opt_ret_1m'] = df.groupby('symbol')['close_opt'].pct_change(1) * 100
+        df['opt_ret_5m'] = df.groupby('symbol')['close_opt'].pct_change(5) * 100
+        
+        # Spot returns
+        df['spot_ret_1m'] = df.groupby('symbol')['close_spot'].pct_change(1) * 100
+        df['spot_ret_5m'] = df.groupby('symbol')['close_spot'].pct_change(5) * 100
+        
+        return df
+
     def process_single_day(self, opt_path, spot_path):
         """Processes a single day of option and spot data."""
         print(f"Loading Options: {opt_path}")
@@ -115,7 +130,10 @@ class FeatureEngineer:
         # 5. Calculate Greeks
         df_merged = self._calculate_greeks(df_merged)
         
-        # 6. Memory Optimization
+        # 6. Calculate Momentum
+        df_merged = self._calculate_momentum(df_merged)
+        
+        # 7. Memory Optimization
         float64_cols = df_merged.select_dtypes(include=['float64']).columns
         df_merged[float64_cols] = df_merged[float64_cols].astype('float32')
         

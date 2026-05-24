@@ -29,7 +29,7 @@ MONEYNESS_HIGH = 1.15
 FEATURE_COLS = [
     "moneyness", "TTE", "IV",
     "delta", "gamma", "theta", "vega", "rho",
-    "close_opt", "close_spot",
+    "opt_ret_1m", "opt_ret_5m", "spot_ret_1m", "spot_ret_5m",
     "oi", "volume",
     "option_type_enc",
 ]
