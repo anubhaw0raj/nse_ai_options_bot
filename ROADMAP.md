@@ -71,9 +71,9 @@ dummy data exactly as it will live. Going live later means swapping in
 
 ---
 
-## Phase 0 — Foundation & Repo Hygiene  *(small, do first)*
+## Phase 0 — Foundation & Repo Hygiene  *(small, do first)*  ✅ DONE (Jul 2026)
 
-- [ ] Restructure into a proper package:
+- [x] Restructure into a proper package:
   ```
   nse_ai_options_bot/
   ├── config/settings.yaml        # instrument specs, lot sizes by date, costs, thresholds
@@ -92,21 +92,22 @@ dummy data exactly as it will live. Going live later means swapping in
   ├── reports/         (generated run reports)
   └── docs/            (this roadmap, theory report, run reports)
   ```
-- [ ] Central YAML config + `python-dotenv` for secrets; **lot-size-by-date table** for BANKNIFTY/NIFTY.
-- [ ] Rewrite `requirements.txt` as UTF-8 with only the ~15 real deps (pandas, numpy, scikit-learn, py_vollib_vectorized, matplotlib, lightgbm, pyyaml, fyers-apiv3, feedparser, requests, pytest…).
-- [ ] Structured logging (`logging` with per-run log files under `reports/logs/`).
-- [ ] `pytest` skeleton + first tests (symbol parser, TTE, target builder).
-- [ ] Proper `README.md`.
+- [x] Central YAML config + `python-dotenv` for secrets; **lot-size-by-date table** for BANKNIFTY/NIFTY.
+- [x] Rewrite `requirements.txt` as UTF-8 with only the ~15 real deps (pandas, numpy, scikit-learn, py_vollib_vectorized, matplotlib, lightgbm, pyyaml, fyers-apiv3, feedparser, requests, pytest…).
+- [x] Structured logging util (`src/utils/logging_setup.py`).
+- [x] `pytest` skeleton + first tests (symbol parser, target builder, costs, config).
+- [x] Proper `README.md`.
 
 **Exit criteria:** `pip install -r requirements.txt` works cross-platform; `pytest` green; `python scripts/run_backtest.py` reproduces today's behavior.
 
-## Phase 1 — Correctness Fixes  *(critical)*
+## Phase 1 — Correctness Fixes  *(critical)*  ✅ DONE (Jul 2026)
 
-- [ ] Fix per-symbol target shifting (groupby `symbol` before `shift(-horizon)`).
-- [ ] Fix per-symbol time-gap handling (don't label across a >1-minute gap).
-- [ ] Cost model (`backtest/costs.py`): brokerage ₹20/order, STT 0.125% sell-side on premium, exchange txn 0.05%, GST, stamp duty, SEBI fees + **slippage** = ½ spread estimate (or ticks). Every simulated fill goes through it.
-- [ ] Deadband label option: UP means `future > now × (1 + cost_hurdle)` so the model learns *tradeable* moves, not 1-tick noise.
-- [ ] Re-run the 7-day baseline and record the honest post-cost result in `reports/` (expect it to get worse — that's the point).
+- [x] Fix per-symbol target shifting (groupby `symbol` before `shift(-horizon)`).
+- [x] Fix per-symbol time-gap handling (gap guard: no label across >2× horizon gap).
+- [x] Cost model (`backtest/costs.py`): brokerage ₹20/order, STT sell-side on premium, exchange txn, GST, stamp duty, SEBI fees + **slippage** per side. Every simulated fill goes through it.
+- [x] Deadband label option: UP means `future > now × (1 + deadband)` so the model learns *tradeable* moves, not 1-tick noise.
+- [x] Re-run the 7-day baseline: post-cost result on 2020-01-10 is **negative**
+      (CE net ≈ −₹2.1k, PE net ≈ −₹1.9k, charges ≈ ₹1.6–2.3k) — honest benchmark recorded.
 
 **Exit criteria:** unit test proves the target for symbol X never uses prices of symbol Y; backtest report shows gross AND net PnL.
 
