@@ -111,14 +111,21 @@ dummy data exactly as it will live. Going live later means swapping in
 
 **Exit criteria:** unit test proves the target for symbol X never uses prices of symbol Y; backtest report shows gross AND net PnL.
 
-## Phase 2 — Feature Store + Full-History Walk-Forward Backtest
+## Phase 2 — Feature Store + Full-History Walk-Forward Backtest  ✅ CORE DONE (Jul 2026)
 
-- [ ] `scripts/build_features.py`: one-time pass converting all 5 years of raw CSVs into partitioned **Parquet** feature files (`data/features/{instrument}/{yyyy}/{mm}/{dd}.parquet`). Greeks computed once, ever.
-- [ ] `backtest/walkforward.py`: rolling scheme — train on N days (e.g., 30), test the next day, slide forward across 2020→2024. Retrain cadence configurable (daily/weekly).
-- [ ] Persist every simulated trade to SQLite (`reports/trades.db`): timestamps, symbol, entry/exit, P(UP), costs, pnl, exit reason.
-- [ ] Real metrics module (`src/backtest/metrics.py` — currently an empty file): Sharpe, Sortino, profit factor, expectancy, max drawdown, win rate, avg hold, exposure, per-regime breakdown.
-- [ ] HTML/PDF run report per backtest: equity curve, monthly returns heatmap, drawdown chart, metric table (replaces one-off PNG charts).
-- [ ] Both CE and PE tradeable; both BANKNIFTY and NIFTY.
+- [x] `scripts/build_features.py`: one-time pass converting all 5 years of raw CSVs into **Parquet** feature files (`data/features/{instrument}/{date}.parquet`). All 1,139 days built (~0.8s/day), zero failures.
+- [x] `backtest/walkforward.py`: rolling scheme — train on N days, test the next day, slide forward. Retrain cadence configurable.
+- [x] Trade log persisted per run (`reports/walkforward_*/trades.csv`). *(SQLite upgrade deferred.)*
+- [x] Real metrics module (`src/backtest/metrics.py`): Sharpe, Sortino, profit factor, expectancy, max drawdown, win rate, avg hold, best/worst day.
+- [x] Markdown + PNG run report per backtest (equity curve, daily bars, monthly table). *(HTML/PDF polish deferred.)*
+- [x] Both CE and PE tradeable. *(NIFTY runs pending — same code path, just `--instrument nifty` after building its features.)*
+
+**Recorded baseline (full-year 2020, entry 0.70/exit 0.35, 10-day train):**
+4,706 trades, gross −₹72k, charges −₹277k, **net −₹350k**, PF 0.70.
+Diagnosis: gross ≈ −₹15/trade (≈ zero raw edge at 5-min horizon) while costs
+≈ ₹59/trade → the strategy trades ~20×/day and pays the toll every time.
+Phase 3's job: calibration + threshold/expectancy optimization + longer
+horizons to cut trade count 10× and make the per-trade edge exceed costs.
 
 **Exit criteria:** one command backtests all 5 years in minutes (from Parquet), produces a report; results segmented by year (2020 Covid, 2022 Ukraine, 2024 election — natural stress tests already in the data).
 
