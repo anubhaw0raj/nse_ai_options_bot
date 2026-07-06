@@ -129,18 +129,33 @@ horizons to cut trade count 10× and make the per-trade edge exceed costs.
 
 **Exit criteria:** one command backtests all 5 years in minutes (from Parquet), produces a report; results segmented by year (2020 Covid, 2022 Ukraine, 2024 election — natural stress tests already in the data).
 
-## Phase 3 — Model Upgrades
+## Phase 3 — Model Upgrades  ✅ CORE DONE (Jul 2026)
 
-- [ ] New features: OI change / OI momentum, volume z-score, put-call ratio at strike & aggregate, IV rank/percentile (rolling), IV skew (25Δ), futures basis (fut − spot, data already on disk, currently unused), VWAP distance, time-of-day encodings, day-of-week, distance-to-expiry buckets, rolling realized vol of spot (5m/15m/60m).
-- [ ] Swap GBM → **LightGBM** (10–50× faster, native NaN handling) with early stopping.
-- [ ] **Probability calibration** (isotonic/Platt on a validation fold) — entry thresholds only mean something if P(UP)=0.6 really wins ~60%.
-- [ ] Threshold optimization on validation (maximize post-cost expectancy, not accuracy).
-- [ ] Purged/embargoed walk-forward CV for hyperparameter tuning (no leakage across the 5-min horizon).
-- [ ] Model registry: every trained model saved with hash, config, feature list, train window, validation metrics (`models/registry/`).
-- [ ] Experiment log (simple CSV/MLflow-lite) comparing runs.
-- [ ] Optional stretch: multi-horizon heads (5/15/30 min), meta-labeling (second model decides "take this signal or not").
+- [x] New features: OI change, volume z-score, PCR (OI + volume), IV z-score, IV skew, futures basis / returns / OI flow / VWAP distance, time-of-day, day-of-week, realized vol 15m/60m. *(Multi-day IV rank deferred.)*
+- [x] Swap GBM → **LightGBM** (native NaN handling, fast walk-forward retrains).
+- [x] **Probability calibration** — isotonic on a 2-day held-out fold inside each sliding window.
+- [x] Threshold optimization — daily grid search maximizing *post-cost net PnL simulated on the calibration days*; ties → higher threshold.
+- [x] **No-edge skip rule** — if the best calibration-day net ≤ 0, don't trade the test day at all.
+- [ ] Purged/embargoed CV for hyperparameter tuning *(deferred — thresholds were the binding constraint, not tree params)*.
+- [ ] Model registry *(deferred to Phase 6 — per-run params live in experiments.csv)*.
+- [x] Experiment log: `reports/experiments.csv`, one row per run.
+- [x] Multi-horizon tested: 5 / 15 / 30 min full-year 2020 runs.
 
-**Exit criteria:** calibrated model beats the Phase-2 baseline on net expectancy across the full walk-forward, not just one day.
+**Exit criteria met:** net expectancy improved from −₹74.3/trade (Phase-2
+baseline) to −₹36.2/trade, and full-year net from **−₹350k → −₹10k (35×)**:
+
+| Full-year 2020 | trades | gross | charges | net | PF | Sharpe |
+|---|---|---|---|---|---|---|
+| Phase-2 baseline (0.70 fixed) | 4,706 | −72k | 277k | −350k | 0.70 | −7.6 |
+| Phase-3, h=5m  | 470 | **+5.2k** | 27k | −22k | 0.79 | −2.6 |
+| Phase-3, h=15m ← best | 276 | **+5.7k** | 16k | **−10k** | 0.85 | −1.8 |
+| Phase-3, h=30m | 236 | −18k | 14k | −32k | 0.66 | −4.1 |
+
+Diagnosis for Phase 4: at h=15m gross is now positive; ~₹40 of the ~₹57/trade
+charges is *flat brokerage*, so the remaining gap is (a) per-trade stop-loss —
+avg loss ₹460 > avg win ₹426, cut the left tail; (b) position sizing to
+amortize flat costs; (c) regime filter. h=30m shows unmanaged long holds
+bleed (avg loss ₹805) → stops matter more than horizon beyond 15m.
 
 ## Phase 4 — Strategy & Risk Layer
 

@@ -1,2 +1,5 @@
 ts,instrument,start,end,train_days,cal_days,horizon,max_hold,deadband,calibrated,threshold,exit,skip_no_edge,skipped_days,n_trades,gross,charges,net,pf,sharpe,max_dd,report
 2026-07-06 16:11,banknifty,2020-01-15,2020-02-14,10,2,5,10,0.1,True,auto,0.45,True,15,40,-4549,2091,-6640,0.31,-8.29,7879,walkforward_banknifty_20260706_161011
+2026-07-06 16:24,banknifty,2020-01-15,2020-12-31,10,2,5,10,0.1,True,auto,0.45,True,113,470,5225,27474,-22250,0.79,-2.6,23489,walkforward_banknifty_20260706_161234
+2026-07-06 16:35,banknifty,2020-01-15,2020-12-31,10,2,15,30,0.1,True,auto,0.45,True,150,276,5710,15693,-9983,0.85,-1.82,11245,walkforward_banknifty_20260706_162404
+2026-07-06 16:46,banknifty,2020-01-15,2020-12-31,10,2,30,60,0.1,True,auto,0.45,True,153,236,-18335,13936,-32271,0.66,-4.08,40081,walkforward_banknifty_20260706_163536
