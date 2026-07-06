@@ -3,3 +3,8 @@ __pycache__/
 *.pyc
 .env
 data/raw_option_chain/
+
+# generated artifacts
+data/features/
+reports/logs/
+*.db

@@ -1,0 +1,56 @@
+# ── NSE AI Options Bot — central configuration ─────────────────────────────
+
+instrument: banknifty          # default instrument for scripts
+
+data:
+  raw_dir: data/raw_option_chain
+  features_dir: data/features   # parquet feature store (built by scripts/build_features.py)
+  reports_dir: reports
+
+instruments:
+  banknifty:
+    spot_symbol: BANKNIFTY
+    strike_step: 100
+    tick_size: 0.05
+    # Lot sizes by effective date (APPROXIMATE — verify against NSE circulars
+    # before any live trading; backtest uses the value in force on trade date).
+    lot_sizes:
+      2020-01-01: 20
+      2021-07-30: 25
+      2023-07-28: 15
+      2024-11-20: 30
+  nifty:
+    spot_symbol: NIFTY
+    strike_step: 50
+    tick_size: 0.05
+    lot_sizes:
+      2020-01-01: 75
+      2021-07-30: 50
+      2024-04-26: 25
+      2024-11-20: 75
+
+model:
+  horizon_minutes: 5            # predict option direction N minutes ahead
+  moneyness_low: 0.85
+  moneyness_high: 1.15
+  min_premium: 5.0              # drop options priced below this (noise)
+  label_deadband_pct: 0.10      # future must exceed now by this % to label UP
+  n_estimators: 400
+  learning_rate: 0.05
+
+costs:                          # Indian options cost structure (long options, per leg)
+  brokerage_per_order: 20.0     # flat discount-broker fee per executed order
+  stt_sell_pct: 0.0625          # STT on sell-side premium turnover
+  exchange_txn_pct: 0.05        # NSE transaction charge on premium turnover
+  gst_pct: 18.0                 # GST on (brokerage + txn + sebi)
+  sebi_fee_pct: 0.0001          # SEBI turnover fee (₹10/crore)
+  stamp_duty_buy_pct: 0.003     # stamp duty on buy-side turnover
+  slippage_pct: 0.25            # per-side fill slippage as % of premium
+
+strategy:
+  entry_threshold: 0.55         # enter long when P(UP) > this
+  exit_threshold: 0.45          # exit when P(UP) < this
+  max_hold_bars: 10             # max minutes to hold
+  trade_option_types: [CE, PE]  # trade bullish via CE and bearish via PE
+
+risk_free_rate: 0.05
