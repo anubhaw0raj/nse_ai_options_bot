@@ -55,7 +55,9 @@ class WalkForwardRunner:
         self.calibration_days = calibration_days if calibrate else 0
         self.optimize_threshold = optimize_threshold
         self.skip_if_no_edge = skip_if_no_edge
-        self.threshold_grid = threshold_grid or list(DEFAULT_THRESHOLD_GRID)
+        self.threshold_grid = (threshold_grid
+                               or cfg["strategy"].get("threshold_grid")
+                               or list(DEFAULT_THRESHOLD_GRID))
 
         self.store = FeatureStore(cfg["data"]["features_dir"])
         self.cost = CostModel(cfg["costs"])

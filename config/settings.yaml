@@ -52,12 +52,19 @@ strategy:
   exit_threshold: 0.45          # exit when P(UP) < this
   max_hold_bars: 10             # max minutes to hold
   trade_option_types: [CE, PE]  # trade bullish via CE and bearish via PE
+  # 0.60 removed: worst-performing bucket in both 2020 and 2021 tests
+  threshold_grid: [0.65, 0.70, 0.75, 0.80]
 
 risk:                           # Phase-4 trade management (per contract, per day)
-  stop_loss_pct: 12.0           # exit if premium falls this % below entry fill
+  # NOTE: 12% stop was tested on 2020+2021 and lost ~Rs.1k/stop-out by
+  # harvesting 1-minute wick noise (see reports 20260706_165719 / _170841).
+  # 30% is a disaster stop only; routine exits come from signal/time rules.
+  stop_loss_pct: 30.0           # exit if premium falls this % below entry fill
   take_profit_pct: 24.0         # exit if premium rises this % above entry fill
   base_lots: 1                  # lots at minimum conviction
-  max_lots: 3
+  # max_lots 3 tested on 2020+2021: multi-lot buckets lost most -- sizing up
+  # a ~zero-edge strategy amplifies losses. Keep 1 until expectancy > 0.
+  max_lots: 1
   conviction_step: 0.06         # +1 lot per this much P(UP) above entry threshold
   max_position_premium: 20000   # Rs. cap on premium outlay per trade
   max_trades_per_day: 4         # per contract

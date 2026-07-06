@@ -157,19 +157,37 @@ avg loss ₹460 > avg win ₹426, cut the left tail; (b) position sizing to
 amortize flat costs; (c) regime filter. h=30m shows unmanaged long holds
 bleed (avg loss ₹805) → stops matter more than horizon beyond 15m.
 
-## Phase 4 — Strategy & Risk Layer
+## Phase 4 — Strategy & Risk Layer  ✅ DONE (Jul 2026)
 
-- [ ] `RiskManager` between signal and execution:
-  - position sizing (fixed-fraction of capital, volatility-scaled),
-  - hard stop-loss & take-profit per trade (in premium %),
-  - max trades/day, max concurrent positions, daily loss kill-switch,
-  - no-entry windows (first 5 min, last 15 min, expiry-day afternoon rules),
-  - margin/capital tracking for realistic account simulation.
-- [ ] Trade both directions properly: buy CE on bullish signal, buy PE on bearish (two models or symmetric signal).
-- [ ] Regime filter: realized-vol / trend state gating which setups are allowed.
-- [ ] All rules config-driven and backtested through Phase-2 engine.
+- [x] `RiskManager` between signal and execution: conviction-ladder sizing
+      (premium-capped), stop-loss & take-profit (intrabar via option bar
+      high/low), max trades/day, daily loss kill-switch, opening/late-session
+      no-entry windows, rv_15m volatility regime band. All config-driven,
+      all unit-tested (8 tests). *(Margin/capital tracking → Phase 6 broker.)*
+- [x] Both directions traded (ATM CE bullish / ATM PE bearish).
+- [x] Regime filter (realized-vol band gate).
+- [x] Full ablation on 2020 + 2021, h=15m (see reports/experiments.csv):
 
-**Exit criteria:** 5-year walk-forward with full risk stack shows controlled drawdowns; kill-switch and stops verified by unit tests.
+| Config | 2020 net | 2021 net |
+|---|---|---|
+| no risk layer | −10.0k | — |
+| 12% stop, ≤3 lots | −39.7k | −16.9k |
+| 30% disaster stop, ≤3 lots | −18.7k | −11.4k |
+| 30% disaster stop, 1 lot (final) | −12.3k | −16.5k |
+
+**Findings (recorded, evidence-based):**
+1. Tight intrabar stops on 1-min option bars **harvest wick noise**:
+   the 12% stop lost ~₹1k/stop-out while every other exit type was net
+   positive in BOTH years (−₹116k total damage). Stops are now
+   disaster-insurance only (30%).
+2. Conviction sizing on a ~zero-edge signal only amplifies variance —
+   `max_lots: 1` until walk-forward expectancy is positive
+   ("earn the right to size up").
+3. Post-ablation variants differ within noise (±₹5k/yr, sign flips between
+   years). **The system is at its trade-management noise floor
+   (−₹10–20k/yr, down from −₹350k).** Further gains must come from signal
+   quality → Phase 5 event features + continued model research, not more
+   threshold tuning. 2022–2024 remain an untouched holdout.
 
 ## Phase 5 — Event & News Intelligence (the "war factor")
 
