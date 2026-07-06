@@ -17,6 +17,7 @@ import warnings
 import numpy as np
 import pandas as pd
 from lightgbm import LGBMClassifier
+from sklearn.isotonic import IsotonicRegression
 from sklearn.metrics import (accuracy_score, f1_score, precision_score,
                              recall_score, roc_auc_score)
 
@@ -68,6 +69,7 @@ class OptionsModel:
         )
         self.feature_cols: list[str] = []
         self.is_trained = False
+        self.calibrator: IsotonicRegression | None = None
 
     # ── Filtering / encoding ───────────────────────────────────────────────
 
@@ -144,12 +146,37 @@ class OptionsModel:
         y = train_df["target"].astype(int)
         self.model.fit(X, y)
         self.is_trained = True
+        self.calibrator = None          # stale after refit
 
-    def predict_proba(self, df: pd.DataFrame) -> np.ndarray:
+    def fit_calibrator(self, cal_df: pd.DataFrame) -> bool:
+        """Isotonic calibration on a held-out fold (strictly after the fit
+        window, strictly before the test day). Makes P(UP)=0.7 mean ~70%,
+        which is what turns entry thresholds into real expectancy statements.
+        """
+        if not self.is_trained:
+            raise RuntimeError("Call .train() first.")
+        y = cal_df["target"].values.astype(int)
+        if len(cal_df) < 200 or len(np.unique(y)) < 2:
+            self.calibrator = None
+            return False
+        raw = self.predict_proba_raw(cal_df)
+        iso = IsotonicRegression(y_min=0.0, y_max=1.0, out_of_bounds="clip")
+        iso.fit(raw, y)
+        self.calibrator = iso
+        return True
+
+    def predict_proba_raw(self, df: pd.DataFrame) -> np.ndarray:
         if not self.is_trained:
             raise RuntimeError("Call .train() first.")
         X = df[self.feature_cols].astype(float)
         return self.model.predict_proba(X)[:, 1]
+
+    def predict_proba(self, df: pd.DataFrame) -> np.ndarray:
+        """Calibrated probability of UP when a calibrator is fitted."""
+        raw = self.predict_proba_raw(df)
+        if self.calibrator is not None:
+            return self.calibrator.predict(raw)
+        return raw
 
     def evaluate(self, test_df: pd.DataFrame, verbose: bool = True) -> dict:
         proba = self.predict_proba(test_df)
