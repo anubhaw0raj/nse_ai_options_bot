@@ -1,7 +1,10 @@
-"""Single-contract position state machine with realistic costs.
+"""Single-contract position state machine with realistic costs + risk layer.
 
-Entry : P(UP) > entry_threshold while flat
-Exit  : P(UP) < exit_threshold, max holding time, or end of day
+Entry : P(UP) > entry_threshold while flat, AND RiskManager gates pass
+        (trade caps, kill-switch, time windows, vol regime). Position size
+        comes from the conviction ladder (1..max_lots).
+Exit  : intrabar stop-loss / take-profit (via the option bar's low/high),
+        P(UP) < exit_threshold, max holding time, or end of day.
 Fills : slippage-adjusted via CostModel; PnL reported NET of all charges.
 """
 
@@ -23,12 +26,13 @@ OUTPUT_DIR = Path("reports/charts")
 class BacktestSimulator:
     def __init__(self, lot_size: int, cost_model: CostModel,
                  entry_threshold: float = 0.55, exit_threshold: float = 0.45,
-                 max_hold_bars: int = 10):
+                 max_hold_bars: int = 10, risk_manager=None):
         self.lot_size = lot_size
         self.cost = cost_model
         self.entry_threshold = entry_threshold
         self.exit_threshold = exit_threshold
         self.max_hold_bars = max_hold_bars
+        self.rm = risk_manager          # None → plain 1-lot, no stops
         self._stats: dict = {}
         self._trades_df = pd.DataFrame()
 
@@ -62,8 +66,31 @@ class BacktestSimulator:
         df_sim["exit_trade"] = False
         df_sim["pnl"] = 0.0
 
+        has_hl = "high_opt" in df_sim.columns and "low_opt" in df_sim.columns
         state, entry_fill, entry_bar, entry_time = "OUT", 0.0, 0, None
+        lots = 1
         trades = []
+
+        def _close_position(i, exit_fill, bars_held, reason):
+            nonlocal state
+            qty = self.lot_size * lots
+            gross = (exit_fill - entry_fill) * qty
+            charges = self.cost.round_trip_charges(entry_fill, exit_fill, qty)
+            net = gross - charges
+            df_sim.at[i, "pnl"] = net
+            df_sim.at[i, "exit_trade"] = True
+            trades.append(dict(
+                symbol=atm_symbol,
+                option_type=df_sim.at[i, "option_type"],
+                entry_time=entry_time,
+                exit_time=df_sim.at[i, "datetime"],
+                entry_price=entry_fill, exit_price=exit_fill,
+                bars_held=bars_held, lots=lots,
+                gross=gross, charges=charges, pnl=net, exit_reason=reason,
+            ))
+            if self.rm is not None:
+                self.rm.on_exit(net)
+            state = "OUT"
 
         for i in range(n):
             p = float(df_sim.at[i, "prob_up"])
@@ -71,6 +98,18 @@ class BacktestSimulator:
 
             if state == "OUT":
                 if p > self.entry_threshold and i < n - 1:
+                    if self.rm is not None:
+                        ok, _why = self.rm.can_enter(
+                            df_sim.at[i, "datetime"],
+                            float(df_sim.at[i, "min_since_open"])
+                            if "min_since_open" in df_sim.columns else float("nan"),
+                            float(df_sim.at[i, "rv_15m"])
+                            if "rv_15m" in df_sim.columns else float("nan"))
+                        if not ok:
+                            continue
+                        lots = self.rm.size_lots(p, px, self.lot_size)
+                    else:
+                        lots = 1
                     state = "IN"
                     entry_fill = self.cost.buy_fill(px)
                     entry_bar, entry_time = i, df_sim.at[i, "datetime"]
@@ -80,26 +119,32 @@ class BacktestSimulator:
             elif state == "IN":
                 df_sim.at[i, "signal"] = 1
                 bars_held = i - entry_bar
-                if (p < self.exit_threshold
-                        or bars_held >= self.max_hold_bars
-                        or i == n - 1):
-                    exit_fill = self.cost.sell_fill(px)
-                    gross = (exit_fill - entry_fill) * self.lot_size
-                    charges = self.cost.round_trip_charges(
-                        entry_fill, exit_fill, self.lot_size)
-                    net = gross - charges
-                    df_sim.at[i, "pnl"] = net
-                    df_sim.at[i, "exit_trade"] = True
-                    trades.append(dict(
-                        symbol=atm_symbol,
-                        option_type=df_sim.at[i, "option_type"],
-                        entry_time=entry_time,
-                        exit_time=df_sim.at[i, "datetime"],
-                        entry_price=entry_fill, exit_price=exit_fill,
-                        bars_held=bars_held,
-                        gross=gross, charges=charges, pnl=net,
-                    ))
-                    state = "OUT"
+
+                # 1) Intrabar stop / target (only with a risk manager)
+                if self.rm is not None and has_hl:
+                    stop_px = entry_fill * (1 - self.rm.stop_loss_pct)
+                    tp_px = entry_fill * (1 + self.rm.take_profit_pct)
+                    lo = float(df_sim.at[i, "low_opt"])
+                    hi = float(df_sim.at[i, "high_opt"])
+                    if lo == lo and lo <= stop_px:      # stop first: conservative
+                        _close_position(i, self.cost.sell_fill(stop_px),
+                                        bars_held, "stop")
+                        continue
+                    if hi == hi and hi >= tp_px:
+                        _close_position(i, self.cost.sell_fill(tp_px),
+                                        bars_held, "target")
+                        continue
+
+                # 2) Signal / time / end-of-day exits at the close
+                if p < self.exit_threshold:
+                    _close_position(i, self.cost.sell_fill(px), bars_held,
+                                    "signal")
+                elif bars_held >= self.max_hold_bars:
+                    _close_position(i, self.cost.sell_fill(px), bars_held,
+                                    "time")
+                elif i == n - 1:
+                    _close_position(i, self.cost.sell_fill(px), bars_held,
+                                    "eod")
 
         df_sim["cumulative_pnl"] = df_sim["pnl"].cumsum().astype("float32")
 

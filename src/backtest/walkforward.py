@@ -32,6 +32,7 @@ from src.backtest.simulator import BacktestSimulator
 from src.config import lot_size_for
 from src.features.store import FeatureStore
 from src.models.classifier import FEATURE_COLS, OptionsModel
+from src.risk.risk_manager import RiskManager
 
 DEFAULT_THRESHOLD_GRID = [0.60, 0.65, 0.70, 0.75, 0.80]
 
@@ -44,7 +45,8 @@ class WalkForwardRunner:
                  skip_if_no_edge: bool = True,
                  threshold_grid: list[float] | None = None,
                  horizon: int | None = None,
-                 max_hold_bars: int | None = None):
+                 max_hold_bars: int | None = None,
+                 use_risk: bool = True):
         self.cfg = cfg
         self.instrument = instrument
         self.train_days = train_days
@@ -65,6 +67,7 @@ class WalkForwardRunner:
             self.scfg["max_hold_bars"] = max_hold_bars
         elif horizon:  # hold window should scale with prediction horizon
             self.scfg["max_hold_bars"] = max(10, 2 * horizon)
+        self.rcfg = cfg.get("risk", {}) if use_risk else None
 
         self._prepared_cache: dict[date, pd.DataFrame] = {}
 
@@ -101,11 +104,14 @@ class WalkForwardRunner:
             atm = BacktestSimulator.find_atm_symbol(df, opt_type)
             if atm is None:
                 continue
+            rm = (RiskManager(self.rcfg, entry_thr)
+                  if self.rcfg is not None else None)
             sim = BacktestSimulator(
                 lot_size=lot, cost_model=self.cost,
                 entry_threshold=entry_thr,
                 exit_threshold=self.scfg["exit_threshold"],
-                max_hold_bars=self.scfg["max_hold_bars"])
+                max_hold_bars=self.scfg["max_hold_bars"],
+                risk_manager=rm)
             try:
                 sim.run(df, prob, atm_symbol=atm, verbose=False)
             except ValueError:
@@ -303,6 +309,15 @@ class WalkForwardRunner:
         if len(trades):
             by_type = trades.groupby("option_type")["pnl"].agg(["count", "sum"])
             lines += ["", "## By option type", "```", by_type.to_string(), "```"]
+            if "exit_reason" in trades.columns:
+                by_reason = trades.groupby("exit_reason")["pnl"].agg(
+                    ["count", "mean", "sum"])
+                lines += ["", "## By exit reason", "```",
+                          by_reason.to_string(), "```"]
+            if "lots" in trades.columns:
+                by_lots = trades.groupby("lots")["pnl"].agg(["count", "sum"])
+                lines += ["", "## By position size (lots)", "```",
+                          by_lots.to_string(), "```"]
             by_thr = trades.groupby("entry_threshold")["pnl"].agg(["count", "sum"])
             lines += ["", "## By chosen entry threshold", "```",
                       by_thr.to_string(), "```"]
@@ -335,6 +350,7 @@ class WalkForwardRunner:
             else self.scfg["entry_threshold"],
             exit=self.scfg["exit_threshold"],
             skip_no_edge=self.skip_if_no_edge,
+            risk_layer=self.rcfg is not None,
             skipped_days=n_skipped,
             n_trades=m.get("n_trades", 0),
             gross=round(m.get("gross_pnl", 0)),

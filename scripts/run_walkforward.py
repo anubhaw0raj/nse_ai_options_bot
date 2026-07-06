@@ -39,6 +39,8 @@ def main():
     ap.add_argument("--entry", type=float, default=None,
                     help="fixed entry threshold (implies --no-optimize)")
     ap.add_argument("--exit", type=float, default=None)
+    ap.add_argument("--no-risk", action="store_true",
+                    help="disable the Phase-4 risk layer (stops, sizing, caps)")
     args = ap.parse_args()
 
     cfg = load_config()
@@ -59,6 +61,7 @@ def main():
         skip_if_no_edge=not args.no_skip,
         horizon=args.horizon,
         max_hold_bars=args.max_hold,
+        use_risk=not args.no_risk,
     )
     runner.run(start=args.start, end=args.end)
 

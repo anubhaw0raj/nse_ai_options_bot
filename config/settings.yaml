@@ -53,4 +53,18 @@ strategy:
   max_hold_bars: 10             # max minutes to hold
   trade_option_types: [CE, PE]  # trade bullish via CE and bearish via PE
 
+risk:                           # Phase-4 trade management (per contract, per day)
+  stop_loss_pct: 12.0           # exit if premium falls this % below entry fill
+  take_profit_pct: 24.0         # exit if premium rises this % above entry fill
+  base_lots: 1                  # lots at minimum conviction
+  max_lots: 3
+  conviction_step: 0.06         # +1 lot per this much P(UP) above entry threshold
+  max_position_premium: 20000   # Rs. cap on premium outlay per trade
+  max_trades_per_day: 4         # per contract
+  daily_loss_limit: 3000        # Rs. per contract — kill-switch for the day
+  no_entry_first_min: 5         # skip opening noise
+  no_entry_after: "15:00"       # no fresh entries in the last 30 minutes
+  min_rv_15m: 0.02              # dead market — nothing to capture
+  max_rv_15m: 0.30              # panic market — spreads/slippage explode
+
 risk_free_rate: 0.05
