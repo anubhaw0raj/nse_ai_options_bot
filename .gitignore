@@ -8,3 +8,7 @@ data/raw_option_chain/
 data/features/
 reports/logs/
 *.db
+
+# kept local, not published (rebuild the PDF with docs/build_study_guide.py)
+docs/Phase2_Study_Guide.pdf
+docs/Phase2_Presentation_Outline.md
