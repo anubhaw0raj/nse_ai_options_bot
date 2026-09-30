@@ -9,6 +9,7 @@ data/features/
 reports/logs/
 *.db
 
-# kept local, not published (rebuild the PDF with docs/build_study_guide.py)
+# team study material - kept local, not published
 docs/Phase2_Study_Guide.pdf
 docs/Phase2_Presentation_Outline.md
+docs/build_study_guide.py

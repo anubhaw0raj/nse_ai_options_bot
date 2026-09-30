@@ -43,6 +43,9 @@ numbers this report disowns.
 
 ## Building
 
+The team study guide and presentation outline are kept local (see `.gitignore`),
+so they are not in this repository.
+
 No LaTeX toolchain is installed on this machine. Easiest path: upload
 `phase2_report.tex` plus the `figures/` folder to Overleaf, or install MiKTeX and run:
 
