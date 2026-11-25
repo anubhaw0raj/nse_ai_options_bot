@@ -1,0 +1,50 @@
+<!doctype html>
+<!--
+  Flicker-free Plotly chart for Streamlit.
+
+  This frame stays mounted across reruns; each rerun only sends the new figure
+  and we update the existing chart in place with Plotly.react (no unmount, no
+  blank frame). Speaks Streamlit's component protocol directly, so no build
+  step is needed. plotly.min.js is copied here from the plotly Python package
+  at app start (works offline).
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  html, body { margin: 0; padding: 0; background: transparent; overflow: hidden; }
+  #chart { width: 100%; }
+</style>
+<script src="plotly.min.js"></script>
+</head>
+<body>
+<div id="chart"></div>
+<script>
+  const div = document.getElementById("chart");
+  let lastHeight = 0;
+
+  function send(type, data) {
+    window.parent.postMessage(Object.assign({isStreamlitMessage: true, type: type}, data), "*");
+  }
+
+  window.addEventListener("message", (event) => {
+    const msg = event.data;
+    if (!msg || msg.type !== "streamlit:render") return;
+    const args = msg.args || {};
+    const fig = JSON.parse(args.figure);
+    const height = args.height || 400;
+    fig.layout = Object.assign(fig.layout || {}, {height: height, autosize: true});
+    div.style.height = height + "px";
+    Plotly.react(div, fig.data, fig.layout,
+                 {displayModeBar: false, responsive: true});
+    if (height !== lastHeight) {
+      lastHeight = height;
+      send("streamlit:setFrameHeight", {height: height});
+    }
+  });
+
+  window.addEventListener("resize", () => { if (div.data) Plotly.Plots.resize(div); });
+  send("streamlit:componentReady", {apiVersion: 1});
+</script>
+</body>
+</html>

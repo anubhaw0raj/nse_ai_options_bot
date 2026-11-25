@@ -13,3 +13,8 @@ reports/logs/
 docs/Phase2_Study_Guide.pdf
 docs/Phase2_Presentation_Outline.md
 docs/build_study_guide.py
+docs/study_guide_phase45/
+app/plotly_live/plotly.min.js
+
+# college submission report (contains student roll/reg numbers) - kept local
+docs/report/

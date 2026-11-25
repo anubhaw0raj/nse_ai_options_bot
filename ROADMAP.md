@@ -189,6 +189,171 @@ bleed (avg loss ₹805) → stops matter more than horizon beyond 15m.
    quality → Phase 5 event features + continued model research, not more
    threshold tuning. 2022–2024 remain an untouched holdout.
 
+## Phase 4.5 — Queued experiments (cheap, do before Phase 5)
+
+Raised while writing the Phase 2 report (`docs/phase2_report.tex`) and during
+the pre-viva review. Ordered by expected value. None of these need new data.
+
+**Measured 2026-10-17 — the calibration is broken out of sample.**
+`scripts/analyze_calibration.py` replays the real protocol (fit 8d, isotonic
+calibrate 2d, test the next unseen day) over 30 test days. Result, in **both**
+a crisis regime (Feb–Mar 2020) and a calm one (Jun–Jul 2021):
+
+| predicted bucket | promised | actually UP | rows (2021) |
+|---|---|---|---|
+| 0.65–0.70 | 0.672 | **0.323** | 1,568 |
+| 0.70–0.75 | 0.718 | 0.455 | 2,246 |
+| 0.75–0.80 | 0.763 | **0.326** | 647 |
+| 0.80+ | 0.944 | **0.365** | 792 |
+
+Base rate is 0.422, so **the most confident predictions are worse than random**
+— the entry rule is actively selecting the least reliable signals. Out-of-sample
+AUC is 0.515–0.534. This single table explains the negative result better than
+anything else we have found, and it invalidates the threshold search, the
+conviction ladder and the skip rule, all of which are thresholds on a number
+that does not mean what it says.
+
+Cause: isotonic regression fitted on 2 days has almost no data in the tail, so
+the top step of the staircase is estimated from a handful of correlated rows.
+**Raising the calibration fold to 5 days flips it** — p>0.70 then shows 0.676
+actually UP (lift +0.258), though on only 358 rows, so treat the magnitude as
+provisional. Brier also improves (0.2466 → 0.2442).
+
+- [ ] **Fix calibration — now the top priority.** Test, in order: `cal_days`
+      5 → 10; shrink the calibrated probability toward the base rate; cross-
+      validated calibration inside the fit window instead of a held-out tail;
+      and report reliability on every run rather than only Brier. Re-check that
+      the threshold grid still means anything afterwards.
+
+### Follow-up batch — DONE 2026-11-25 (results in report §7.7)
+
+| Change (h=15, grid 0.65–0.80) | 2020 net | 2021 net | vs final (−12,311 / −16,456) |
+|---|---|---|---|
+| **5-day calibration** (fit still 8d) | **−5,353** (29 tr) | **−264** (40 tr, gross +2,028) | +6,958 / +16,192 — only change beyond the noise floor, both years |
+| Deadband 1.5% (2-day cal) | −11,296 | −14,556 | +1,015 / +1,900 — noise; expectancy/trade worse |
+| No risk layer | — | −25,978 | −9,522 — risk layer helps; max DD 31.4k vs 17.8k |
+| Stop disabled (`--stop 100`) | −9,928 | −15,808 | +2,383 / +648 — slightly better, within noise |
+
+Next: deadband 1.5% **with** 5-day calibration; then confirm the 5-day config once on the 2022–24 holdout.
+
+Original queued commands, kept for reference:
+
+Started 2026-10-17, interrupted during run 1 of 7; no results were recorded, so
+all seven still need running. Each is roughly 12 minutes. The grid is held at
+`0.65,0.7,0.75,0.8` in every run so each comparison changes exactly one
+variable. Run them from the repo root:
+
+```bash
+# 1-2  does the calibration fix show up in rupees?
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2020-01-01 --end 2020-12-31 --train-days 13 --cal-days 5
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2021-01-01 --end 2021-12-31 --train-days 13 --cal-days 5
+
+# 3-4  deadband raised to the cost hurdle
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2020-01-01 --end 2020-12-31 --deadband 1.5
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2021-01-01 --end 2021-12-31 --deadband 1.5
+
+# 5    the missing no-risk cell (we only have 2020)
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2021-01-01 --end 2021-12-31 --no-risk
+
+# 6-7  stop disabled, target and caps kept (--stop 100 can never trigger)
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2020-01-01 --end 2020-12-31 --stop 100
+python scripts/run_walkforward.py --horizon 15 --grid 0.65,0.7,0.75,0.8 \
+       --start 2021-01-01 --end 2021-12-31 --stop 100
+```
+
+Dropped deliberately: the stop-35 runs. If `--stop 100` wins there is no
+reason to test 35.
+
+**Needs a decision before starting (do not run unprompted):** the multi-model
+benchmark and the event/news layer.
+
+**Measurement corrections (do first — they affect what we already claim):**
+
+- [ ] **Re-run the risk ablation with the threshold grid held constant.**
+      Confound found: the 12% stop runs (`_165719`, `_170841`) used grid
+      `[0.60 … 0.80]` while the 30% stop runs (`_172356`, `_173502`) used
+      `[0.65 … 0.80]`. That row of the ablation table therefore changes two
+      things at once. The stop conclusion still stands on the **within-run**
+      exit-reason decomposition, but the across-run net figures need redoing.
+- [x] **`--no-risk` on 2021.** *(done: −25,978, risk layer helps)* We only have the no-risk number for 2020
+      (−₹9,983). Without 2021 we cannot say whether the risk layer helps or
+      hurts — the 2020 gap (~₹2.3k) is inside the noise band.
+- [x] **Stop-disabled run** *(done: +2.4k / +0.6k, within noise)* (take-profit, daily cap, time and vol gates kept)
+      on 2020 + 2021. In the final config the stop still loses ₹10.7k / ₹10.5k
+      while target exits *earn* ₹6.4k / ₹5.9k — the stop may be worth removing
+      entirely rather than widening.
+- [ ] **Next-bar execution.** The simulator currently computes the signal from
+      bar *i*'s close and fills at that same close. Fill at bar *i+1*'s open
+      instead and re-measure; slippage only partly covers this.
+
+**New evidence:**
+
+- [ ] **Maximum-adverse-excursion study.** Re-simulate the h=15 no-risk trades
+      recording each trade's deepest dip and its final result. Answers
+      directly: *of trades that dipped 12%, what fraction finished positive?*
+      Turns the stop-loss argument from inference into measurement.
+- [ ] **Random-abstention control.** Skip the same *fraction* of days at
+      random and compare. Tests whether the skip rule is skill or just reduced
+      exposure (limitation vii in the report).
+
+**Signal quality (the main event):**
+
+- [ ] **Triple-barrier labelling** with the upper barrier at the measured cost
+      hurdle. Our label calls a 0.1% move a win while break-even needs ~1.5%,
+      and it ignores the path entirely — a trade that goes +4% at minute 5 and
+      ends flat is labelled a loss. Prediction: accuracy falls, expectancy per
+      trade rises. Highest expected value item on this list.
+- [ ] **Sweep the training window length (`--train-days`).** Never tested:
+      10 days was chosen by intuition in the first run and never justified,
+      while the horizon was swept carefully. A window holds ~100k rows, but
+      those are far from independent — one minute's contracts all move with
+      the same spot, and 15-minute labels overlap, so the effective sample is
+      on the order of a few hundred blocks, not 100k. The window also makes
+      anything slower than 8 days unlearnable: expiry-week behaviour,
+      day-of-week effects (`dow` is a feature the model cannot currently
+      learn), monthly-expiry and event patterns. Compare, in this order:
+      recency-weighted 60-day window (most promising — more data while
+      staying adaptive), plain rolling 20 and 60 days, expanding window, and
+      warm-start/incremental fitting. Note the fit cost: LightGBM is 1.6 s on
+      8 days, so a 60-day window is still only a few seconds per day.
+- [ ] **Feature redundancy and honest importance.** Measured on an 8-day
+      window (100k rows): 7 of 900 feature pairs correlate above 0.7 —
+      `spot_ret_5m`/`fut_ret_5m` 0.94, `spot_ret_1m`/`fut_ret_1m` 0.88,
+      `min_since_open`/`tod_sin` 0.81, `delta`/`option_type_enc` 0.76,
+      `rv_15m`/`rv_60m` 0.75. Collinearity does not bias tree predictions but
+      it splits importance between duplicated columns, so our current
+      ranking is unreliable. Actions: drop or merge the duplicate pairs
+      (`basis_pct` already carries the spot-vs-futures difference); report
+      **gain-based importance or SHAP** instead of split count; recompute
+      correlations over a longer window so spurious pairs (`pcr_oi`/`dow`
+      at 0.77 over 8 days) wash out; clip the 4 infinite cells in
+      `oi_chg_1m`/`oi_chg_5m` (division by a previous OI of zero) to NaN.
+      Context: against the target the strongest single feature correlates at
+      only **0.059** (~0.35% of variance) — no strong *linear* signal, though
+      trees can still exploit interactions correlation cannot see.
+- [ ] **Raise `min_premium`.** Currently ₹5; a ₹100 option needs a 3.0% move to
+      break even versus 1.0% for a ₹800 one. Free improvement.
+- [ ] **Multi-horizon agreement filter.** Predict 5/15/30m and enter only on
+      agreement — a filter, not extra trading.
+- [ ] **Controlled model benchmark** (Logistic Regression, Random Forest,
+      LightGBM, XGBoost, CatBoost, LSTM) under identical features, windows,
+      costs and seeds. Select on 2020–21, confirm **once** on the holdout,
+      report the deflated Sharpe ratio alongside the raw one. Do this *after*
+      the label fix — a better model on a misaligned target cannot help.
+
+**Known structural gap (needs the Phase 6 orchestrator):**
+
+- [ ] **Portfolio-level risk.** CE and PE are simulated independently, each
+      with its own `RiskManager`, so the system can hold an ATM call and an ATM
+      put simultaneously and the daily loss limit is enforced *per contract*,
+      not per account.
+
 ## Phase 5 — Event & News Intelligence (the "war factor")
 
 Two inputs producing one number: **`event_risk ∈ [0, 1]`** with a category

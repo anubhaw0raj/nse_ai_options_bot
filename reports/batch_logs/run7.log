@@ -1,0 +1,42 @@
+Walk-forward: 238 test days (2021-01-15 .. 2021-12-31)  train=10d cal=2d horizon=15m hold<=30 calibrate=True optimize=True skip_no_edge=True
+  [10/238] 2021-01-29  thr=0.80 SKIP  day Rs.0  running Rs.-701  (skipped 7d)
+  [20/238] 2021-02-12  thr=0.80 SKIP  day Rs.0  running Rs.-701  (skipped 15d)
+  [30/238] 2021-02-26  thr=0.80 SKIP  day Rs.0  running Rs.1,232  (skipped 22d)
+  [40/238] 2021-03-15  thr=0.80 SKIP  day Rs.0  running Rs.1,299  (skipped 27d)
+  [50/238] 2021-03-30  thr=0.70  day Rs.0  running Rs.-4,057  (skipped 32d)
+  [60/238] 2021-04-15  thr=0.80 SKIP  day Rs.0  running Rs.-5,504  (skipped 38d)
+  [70/238] 2021-04-30  thr=0.80 SKIP  day Rs.0  running Rs.-8,348  (skipped 46d)
+  [80/238] 2021-05-17  thr=0.80 SKIP  day Rs.0  running Rs.-8,348  (skipped 53d)
+  [90/238] 2021-05-31  thr=0.75  day Rs.0  running Rs.-7,749  (skipped 61d)
+  [100/238] 2021-06-14  thr=0.65  day Rs.-338  running Rs.-7,610  (skipped 67d)
+  [110/238] 2021-06-28  thr=0.80 SKIP  day Rs.0  running Rs.-7,610  (skipped 77d)
+  [120/238] 2021-07-12  thr=0.70  day Rs.-1,247  running Rs.-7,385  (skipped 83d)
+  [130/238] 2021-07-27  thr=0.65  day Rs.-952  running Rs.-9,931  (skipped 88d)
+  [140/238] 2021-08-10  thr=0.80  day Rs.0  running Rs.-9,462  (skipped 95d)
+  [150/238] 2021-08-25  thr=0.80 SKIP  day Rs.0  running Rs.-8,746  (skipped 103d)
+  [160/238] 2021-09-08  thr=0.80  day Rs.0  running Rs.-8,746  (skipped 110d)
+  [170/238] 2021-09-23  thr=0.70  day Rs.0  running Rs.-10,348  (skipped 114d)
+  [180/238] 2021-10-07  thr=0.80 SKIP  day Rs.0  running Rs.-11,649  (skipped 121d)
+  [190/238] 2021-10-22  thr=0.80 SKIP  day Rs.0  running Rs.-11,649  (skipped 131d)
+  [200/238] 2021-11-08  thr=0.70  day Rs.0  running Rs.-11,649  (skipped 140d)
+  [210/238] 2021-11-23  thr=0.80 SKIP  day Rs.0  running Rs.-13,438  (skipped 148d)
+  [220/238] 2021-12-07  thr=0.80 SKIP  day Rs.0  running Rs.-12,995  (skipped 157d)
+  [230/238] 2021-12-21  thr=0.80 SKIP  day Rs.0  running Rs.-12,995  (skipped 166d)
+  [238/238] 2021-12-31  thr=0.65  day Rs.-2,043  running Rs.-15,808  (skipped 171d)
+
+Report written to reports\walkforward_banknifty_20261125_015223
+  Trades                : 101  over 30 days
+  Win rate              : 44.6%
+  Gross PnL             : Rs.-9,962
+  Charges               : Rs.5,845
+  NET PnL               : Rs.-15,808
+  Expectancy / trade    : Rs.-156.5
+  Avg win / loss        : Rs.371 / Rs.-581
+  Profit factor         : 0.51
+  Avg hold              : 13.1 bars
+  Max drawdown          : Rs.17,107
+  Best / worst day      : Rs.1,933 / Rs.-4,055
+  Sharpe (daily, ann.)  : -6.57
+  Sortino (daily, ann.) : -8.24
+
+  Days skipped by no-edge rule: 171

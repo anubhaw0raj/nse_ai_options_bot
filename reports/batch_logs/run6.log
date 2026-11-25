@@ -1,0 +1,43 @@
+Walk-forward: 242 test days (2020-01-15 .. 2020-12-31)  train=10d cal=2d horizon=15m hold<=30 calibrate=True optimize=True skip_no_edge=True
+  [10/242] 2020-01-28  thr=0.80 SKIP  day Rs.0  running Rs.-184  (skipped 7d)
+  [20/242] 2020-02-10  thr=0.80 SKIP  day Rs.0  running Rs.-184  (skipped 16d)
+  [30/242] 2020-02-25  thr=0.70  day Rs.0  running Rs.-184  (skipped 23d)
+  [40/242] 2020-03-11  thr=0.65  day Rs.0  running Rs.-184  (skipped 29d)
+  [50/242] 2020-03-25  thr=0.80  day Rs.0  running Rs.-541  (skipped 36d)
+  [60/242] 2020-04-13  thr=0.80 SKIP  day Rs.0  running Rs.-541  (skipped 45d)
+  [70/242] 2020-04-28  thr=0.80 SKIP  day Rs.0  running Rs.-2,511  (skipped 52d)
+  [80/242] 2020-05-13  thr=0.80 SKIP  day Rs.0  running Rs.-2,010  (skipped 58d)
+  [90/242] 2020-05-28  thr=0.65  day Rs.230  running Rs.-4,794  (skipped 64d)
+  [100/242] 2020-06-11  thr=0.80 SKIP  day Rs.0  running Rs.-4,794  (skipped 73d)
+  [110/242] 2020-06-25  thr=0.80  day Rs.0  running Rs.-4,794  (skipped 82d)
+  [120/242] 2020-07-09  thr=0.70  day Rs.0  running Rs.-2,337  (skipped 89d)
+  [130/242] 2020-07-23  thr=0.80 SKIP  day Rs.0  running Rs.-3,234  (skipped 96d)
+  [140/242] 2020-08-06  thr=0.80 SKIP  day Rs.0  running Rs.-3,234  (skipped 106d)
+  [150/242] 2020-08-20  thr=0.80 SKIP  day Rs.0  running Rs.-3,813  (skipped 114d)
+  [160/242] 2020-09-03  thr=0.75 SKIP  day Rs.0  running Rs.-5,167  (skipped 121d)
+  [170/242] 2020-09-17  thr=0.80 SKIP  day Rs.0  running Rs.-5,167  (skipped 131d)
+  [180/242] 2020-10-01  thr=0.70  day Rs.952  running Rs.-7,144  (skipped 136d)
+  [190/242] 2020-10-16  thr=0.80 SKIP  day Rs.0  running Rs.-10,400  (skipped 142d)
+  [200/242] 2020-10-30  thr=0.80 SKIP  day Rs.0  running Rs.-11,457  (skipped 149d)
+  [210/242] 2020-11-13  thr=0.80  day Rs.-1,216  running Rs.-9,726  (skipped 153d)
+  [220/242] 2020-11-27  thr=0.80 SKIP  day Rs.0  running Rs.-10,359  (skipped 162d)
+  [230/242] 2020-12-14  thr=0.70  day Rs.0  running Rs.-9,099  (skipped 168d)
+  [240/242] 2020-12-29  thr=0.80  day Rs.0  running Rs.-9,940  (skipped 173d)
+  [242/242] 2020-12-31  thr=0.80  day Rs.11  running Rs.-9,928  (skipped 174d)
+
+Report written to reports\walkforward_banknifty_20261125_013737
+  Trades                : 94  over 38 days
+  Win rate              : 46.8%
+  Gross PnL             : Rs.-4,529
+  Charges               : Rs.5,399
+  NET PnL               : Rs.-9,928
+  Expectancy / trade    : Rs.-105.6
+  Avg win / loss        : Rs.428 / Rs.-576
+  Profit factor         : 0.65
+  Avg hold              : 16.7 bars
+  Max drawdown          : Rs.12,476
+  Best / worst day      : Rs.2,804 / Rs.-2,286
+  Sharpe (daily, ann.)  : -3.94
+  Sortino (daily, ann.) : -5.92
+
+  Days skipped by no-edge rule: 174

@@ -350,9 +350,14 @@ class WalkForwardRunner:
             calibrated=self.calibrate,
             threshold="auto" if self.optimize_threshold
             else self.scfg["entry_threshold"],
+            grid="|".join(str(t) for t in self.threshold_grid)
+            if self.optimize_threshold else "",
             exit=self.scfg["exit_threshold"],
             skip_no_edge=self.skip_if_no_edge,
             risk_layer=self.rcfg is not None,
+            stop_pct=(self.rcfg or {}).get("stop_loss_pct", ""),
+            take_profit_pct=(self.rcfg or {}).get("take_profit_pct", ""),
+            max_lots=(self.rcfg or {}).get("max_lots", ""),
             skipped_days=n_skipped,
             n_trades=m.get("n_trades", 0),
             gross=round(m.get("gross_pnl", 0)),
